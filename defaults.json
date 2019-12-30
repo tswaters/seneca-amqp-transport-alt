@@ -1,0 +1,8 @@
+{
+  "amqp": {
+    "type": "amqp",
+    "url": "amqp://localhost",
+    "reconnectInterval": 5000,
+    "prefetch": 1
+  }
+}
