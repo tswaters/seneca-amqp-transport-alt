@@ -2,7 +2,7 @@
 
 # seneca-amqp-transport-alt
 
-<a href="https://www.npmjs.org/package/tswaters/seneca-amqp-transport-alt"><img
+<a href="https://www.npmjs.org/package/seneca-amqp-transport-alt"><img
   src="https://img.shields.io/npm/v/seneca-amqp-transport-alt" alt="npm version"></a>
 <a href="https://travis-ci.org/tswaters/seneca-amqp-transport-alt/"><img
   src="https://img.shields.io/travis/tswaters/seneca-amqp-transport-alt" alt="build status"></a>
