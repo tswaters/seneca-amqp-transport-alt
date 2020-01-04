@@ -36,12 +36,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tswaters/seneca-amqp-transport-extended.git"
+    "url": "git+https://github.com/tswaters/seneca-amqp-transport-alt.git"
   },
   "bugs": {
-    "url": "https://github.com/tswaters/seneca-amqp-transport-extended/issues"
+    "url": "https://github.com/tswaters/seneca-amqp-transport-alt/issues"
   },
-  "homepage": "https://github.com/tswaters/seneca-amqp-transport-extended#readme",
+  "homepage": "https://github.com/tswaters/seneca-amqp-transport-alt#readme",
   "eslintConfig": {
     "env": {
       "node": true,

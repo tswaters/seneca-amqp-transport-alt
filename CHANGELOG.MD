@@ -1,3 +1,7 @@
+# 0.1.3
+
+- Use correct link for git repository
+
 # 0.1.2
 
 - Fix up package.json, include repository & other details.
