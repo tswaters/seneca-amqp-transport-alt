@@ -1,7 +1,7 @@
 {
   "name": "seneca-amqp-transport-alt",
   "version": "0.1.1",
-  "description": "",
+  "description": "This is a re-implementation of the official amqp transport for seneca",
   "main": "seneca-amqp-transport.js",
   "scripts": {
     "precoverage": "rimraf coverage",
@@ -29,6 +29,19 @@
     "amqplib": "^0.5.5",
     "jsonic": "^0.3.1"
   },
+  "directories": {
+    "example": "example",
+    "lib": "lib",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tswaters/seneca-amqp-transport-extended.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tswaters/seneca-amqp-transport-extended/issues"
+  },
+  "homepage": "https://github.com/tswaters/seneca-amqp-transport-extended#readme",
   "eslintConfig": {
     "env": {
       "node": true,
