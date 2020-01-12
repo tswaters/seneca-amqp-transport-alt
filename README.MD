@@ -31,11 +31,51 @@ Then adding `client`s and `listen`ers to the seneca instance. The default `model
 
 The `pin` or `pins` object must match identically between the respective `client` and `listen` calls.
 
-### rpc (consume)
+### options / defaults
 
 ```js
 const Transport = require('seneca-amqp-transport-alt')
 
+const opts = {
+
+  // will wait this long before reconnecting if connection is lost
+  // will connect in a setInterval callback until connection re-established.
+  // if not provided, will not reconnect.
+  reconnectInterval: 5000,
+
+  // if true, calls `seneca.die` upon connection loss instead of attempting to reconnect
+  die: false,
+
+  // if provided, passed to the consume channel of the actor
+  prefetch: 1,
+
+  // all options are provided as first parameter to amqp.connect
+  // this includes the following defaults
+
+  protocol: 'amqp',
+  hostname: 'localhost',
+  port: 5672,
+  username: 'guest',
+  password: 'guest',
+  locale: 'en_US',
+  frameMax: 0,
+  heartbeat: 0,
+  vhost: '/',
+
+  // if provided, this url will be passed as the first param instead
+  url = null,
+
+  // if provided, will be passed as second parameter to amqplib.connect
+  socketOpts = {
+
+  },
+
+}
+```
+
+### rpc (consume)
+
+```js
 const server = Seneca()
 server.use(Transport, opts)
 server.listen({ type: 'amqp', pin: 'role:test,cmd:echo' })
@@ -54,8 +94,6 @@ const res = client.act('role:test,cmd:echo', { ok: true }, msg =>
 ### pubsub (observe)
 
 ```js
-const Transport = require('seneca-amqp-transport-alt')
-
 const server1 = Seneca()
 server1.use(Transport, opts)
 server1.listen({ type: 'amqp', model: 'observe', pin: 'role:cache,cmd:clear' })
@@ -63,30 +101,21 @@ server1.add('role:cache,cmd:clear', (msg, cb) => cb(null, msg))
 await new Promise(resolve => server1.ready(resolve))
 
 const server2 = Seneca()
-server2.use(Transport, { url: 'string', host: 'string', port: 'string' })
+server2.use(Transport, opts)
 server2.listen({ type: 'amqp', model: 'observe', pin: 'role:cache,cmd:clear' })
 server2.add('role:cache,cmd:clear', (msg, cb) => cb(null, msg))
 await new Promise(resolve => server2.ready(resolve))
 
 const client = Seneca()
-client.use(Transport, { url: 'string', host: 'string', port: 'string' })
+client.use(Transport, opts)
 client.client({ type: 'amqp', model: 'observe', pin: 'role:cache,cmd:clear' })
 await new Promise(resolve => client.ready(resolve))
+
 const res = client.act('role:cache,cmd:clear', (err, msg) => {
   // note - you won't get back any meaningul message here, it is always set to {ok: true}
   // you will get errors though if there's a problem publishing to the fanout exchange
   assert(msg.ok)
 })
-```
-
-### options / defaults
-
-```js
-{
-  "url": "amqp://localhost",
-  "reconnectInterval": 5000,
-  "prefetch": 1
-}
 ```
 
 ## amqp notes / how it works
