@@ -1,3 +1,8 @@
+# 0.2.0
+
+- New way to pass options into the amqp client
+- new `die` option, disables reconnecting logic
+
 # 0.1.3
 
 - Use correct link for git repository
