@@ -1,5 +1,6 @@
 'use strict'
 
+const assert = require('assert')
 const proxyquire = require('proxyquire')
 const sinon = require('sinon')
 const Seneca = require('seneca')
@@ -11,19 +12,14 @@ const { Connection } = require('../../lib/amqp-wrap/connection')
 // such as turning off the AMQP broker after connecting, verifying it retries
 // and eventually succeeds once the broker is turned back on.
 //
-// A few notes on the timeouts and lack of assertions:
+// A few notes on the timeouts:
 //
-// Seneca doesn't return plugin errors during init
-// as such, we can't verify these error tests (they show up in coverage though)
-// this is also why we have `undead: true` in the debug options -
-// otherwise seneca will recognize an initialization failure and process.exit(1).
-//
-// furthermore, we can't use emitters during initialization;
+// we can't use emitters during initialization;
 // Seneca fires the plugin initialization logic in next tick.
 // Plugin initialization waits for events to fire
 // if we emit via a stub too early, the handlers haven't been attached yet.
 // if we await on seneca.ready, it times out waiting for the events
-// so, we get around it with a 16ms timeout.
+// so, we get around it with a timeout (takes way longer on node8, 150ms to be safe.)
 
 const wait = ts => new Promise(resolve => setTimeout(resolve, ts))
 
@@ -42,6 +38,8 @@ describe('plugin', () => {
   let si = null
   let connection = null
   let channel = null
+  let Transport = null
+  let fatalError = null
 
   beforeEach(async () => {
     connection = sinon.createStubInstance(Connection)
@@ -50,66 +48,79 @@ describe('plugin', () => {
     channel.emit.callThrough()
     connection.on.callThrough()
     channel.on.callThrough()
-    si = Seneca({ ...opts, debug: { undead: true } })
-    si.use(
-      proxyquire(
-        '../../seneca-amqp-transport',
-        Object.entries(specs).reduce(
-          (memo, [, { model, hook }]) => ({
-            ...memo,
-            [`./lib/${model}/${hook}`]: proxyquire(
-              `../../lib/${model}/${hook}`,
-              {
-                '../amqp-wrap/connection': {
-                  Connection: sinon.stub().returns(connection)
-                },
-                '../amqp-wrap/channel': {
-                  Channel: sinon.stub().returns(channel)
-                }
-              }
-            )
-          }),
-          {}
-        )
+    si = Seneca({
+      ...opts,
+      errhandler: err => {
+        fatalError = err
+        return false
+      },
+      debug: { undead: true }
+    })
+    Transport = proxyquire(
+      '../../seneca-amqp-transport',
+      Object.entries(specs).reduce(
+        (memo, [, { model, hook }]) => ({
+          ...memo,
+          [`./lib/${model}/${hook}`]: proxyquire(`../../lib/${model}/${hook}`, {
+            '../amqp-wrap/connection': {
+              Connection: sinon.stub().returns(connection)
+            },
+            '../amqp-wrap/channel': {
+              Channel: sinon.stub().returns(channel)
+            }
+          })
+        }),
+        {}
       )
     )
   })
 
   afterEach(done => {
+    fatalError = null
     sinon.reset()
     si.close(done)
   })
 
   it('throws for invalid model', async () => {
+    si.use(Transport)
     si.listen({ type: 'amqp', model: 'invalid', pin: 'role:test,cmd:echo' })
     await wait(16)
-    await new Promise(resolve => si.ready(resolve)) // can't assert, seneca doesn't give back plugin errors
+    await new Promise(resolve => si.ready(resolve))
+    assert(fatalError)
+    assert(/invalid model/.test(fatalError.message))
   })
 
   describe('connection errors during initialization', () =>
     specs.forEach(({ model, hook }) => {
       it(`${model}-${hook}`, async () => {
+        si.use(Transport)
         si[hook]({ type: 'amqp', model, pin: 'role:test,cmd:echo' })
         await wait(150)
         connection.emit('error', new Error('aw snap'))
-        await new Promise(resolve => si.ready(resolve)) // can't assert, seneca doesn't give back plugin errors
+        await new Promise(resolve => si.ready(resolve))
+        assert(fatalError)
+        assert(/aw snap/.test(fatalError.message))
       })
     }))
 
   describe('channel errors during initialization', () =>
     specs.forEach(({ model, hook }) => {
       it(`${model}-${hook}`, async () => {
+        si.use(Transport)
         si[hook]({ type: 'amqp', model, pin: 'role:test,cmd:echo' })
         await wait(150)
         connection.emit('ready')
         channel.emit('error', new Error('aw snap'))
-        await new Promise(resolve => si.ready(resolve)) // can't assert, seneca doesn't give back plugin errors
+        await new Promise(resolve => si.ready(resolve))
+        assert(fatalError)
+        assert(/aw snap/.test(fatalError.message))
       })
     }))
 
   describe('connection problems after initialization', () =>
     specs.forEach(({ model, hook }) => {
       it(`${model}-${hook}`, async () => {
+        si.use(Transport)
         si[hook]({ type: 'amqp', model, pin: 'role:test,cmd:echo' })
         await wait(150)
         connection.emit('ready')
