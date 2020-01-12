@@ -55,4 +55,10 @@ describe('reconnector', () => {
 
     assert.equal(readyCount, 2)
   })
+
+  it('shouldnt reconnect if die is set to true', () => {
+    reconnector.die = true
+    reconnector.emit('close')
+    assert.equal(reconnector.tid, null)
+  })
 })

@@ -21,9 +21,9 @@ module.exports = function SenecaAmqpTransport(options) {
   const seneca = this
 
   const tu = seneca.export('transport/utils')
-  const opts = seneca.util.deepextend(defaults, options)
+  const opts = seneca.util.deepextend(defaults, { amqp: options })
 
-  const get = (hook, opts, tu) => (msg, fin) => {
+  const get = hook => (msg, fin) => {
     const { model = 'consume' } = msg
     if (!modelTypes.includes(model))
       throw new Error(

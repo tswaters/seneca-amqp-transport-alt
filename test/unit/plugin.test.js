@@ -137,4 +137,25 @@ describe('plugin', () => {
         await wait(150)
       })
     }))
+
+  describe('connection failures kill when die is enabled', () =>
+    specs.forEach(({ model, hook }) => {
+      it(`${model}-${hook}`, async () => {
+        si.use(Transport, { die: true })
+        si[hook]({ type: 'amqp', model, pin: 'role:test,cmd:echo' })
+        await wait(150)
+        connection.emit('ready')
+        channel.emit('ready')
+        await new Promise(resolve => si.ready(resolve))
+
+        channel.emit('error', new Error('aw snap'))
+        connection.emit('error', new Error('aw snap'))
+        channel.emit('close')
+        connection.emit('close')
+        await wait(150)
+
+        assert(fatalError)
+        assert.equal(fatalError.message, 'aw snap')
+      })
+    }))
 })
